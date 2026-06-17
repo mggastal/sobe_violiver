@@ -30,6 +30,23 @@ COR_ACENTO       = "#6659A5"
 LANCAMENTO_COD   = ""        # filtra campanhas; "" = ver tudo
 USAR_PESQUISA    = False            # False = oculta aba Pesquisa
 
+# Moeda — escolha a moeda do cliente:
+#   "BRL"  → R$ (Real Brasileiro)
+#   "USD"  → $ (Dólar Americano)
+#   "EUR"  → € (Euro)
+#   "ARS"  → $ (Peso Argentino)
+MOEDA            = "USD"
+
+_MOEDA_MAP = {
+    "BRL": {"simbolo": "R$", "locale": "pt-BR"},
+    "USD": {"simbolo": "$",  "locale": "en-US"},
+    "EUR": {"simbolo": "€",  "locale": "de-DE"},
+    "ARS": {"simbolo": "$",  "locale": "es-AR"},
+}
+_moeda_cfg    = _MOEDA_MAP.get(MOEDA, _MOEDA_MAP["BRL"])
+MOEDA_SIMBOLO = _moeda_cfg["simbolo"]
+MOEDA_LOCALE  = _moeda_cfg["locale"]
+
 # Metas do funil — define cores (verde/amarelo/vermelho)
 CPL_BOM          = 40.0
 CPL_MEDIO        = 45.0
@@ -796,6 +813,7 @@ def inject_all(tpl, meta_k, meta_d, meta_dc, meta_raw_c, meta_t, meta_bd, meta_m
     html=replace_js_const(html,"GOOGLE_RAW",     g_raw)
     for k,v in [("LANCAMENTO_COD",f"'{LANCAMENTO_COD}'"),("NOME_CLIENTE",f"'{NOME_CLIENTE}'"),
                 ("LOGO_LETRA",f"'{LOGO_LETRA}'"),("COR_ACENTO",f"'{COR_ACENTO}'"),
+                ("MOEDA_SIMBOLO",f"'{MOEDA_SIMBOLO}'"),("MOEDA_COD",f"'{MOEDA}'"),
                 ("CPL_BOM",str(CPL_BOM)),("CPL_MEDIO",str(CPL_MEDIO)),
                 ("CTR_BOM",str(CTR_BOM)),("CTR_MEDIO",str(CTR_MEDIO)),
                 ("CR_BOM",str(CR_BOM)),("CR_MEDIO",str(CR_MEDIO)),
