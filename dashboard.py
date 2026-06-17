@@ -347,19 +347,30 @@ _dfp_pesquisa = pd.DataFrame()  # global: google-ads-pesquisa
 def load_google():
     global _dfp_pesquisa
     print("  Lendo google-ads...")
-    df=pd.read_csv(URL_GOOGLE)
-    df["date"]=pd.to_datetime(df["Date (Segment)"],errors="coerce")
-    df["spend"]=to_num(df["Cost (Spend, Amount Spent)"])
-    df["conversions"]=to_num(df["All Conversions"])
-    df["clicks"]=to_num(df["Clicks"])
-    df["impressions"]=to_num(df["Impressions"])
-    df["campaign"]=df["Campaign Name"]
-    df["adgroup"]=df["Ad Group Name"]
-    df["keyword"]=df["Keyword (Ad Group Criterion)"]
-    df["match_type"]=df["Match Type (Segment)"]
-    df["is_search"]=True
-    df=df.dropna(subset=["date"])
-    print(f"     Search (keywords): {len(df)} linhas | {df['date'].min().date()} → {df['date'].max().date()}")
+    # Colunas padrao para concat
+    COLS=["date","campaign","adgroup","keyword","match_type","spend","conversions","clicks","impressions","is_search"]
+    try:
+        df=pd.read_csv(URL_GOOGLE)
+        df["date"]=pd.to_datetime(df["Date (Segment)"],errors="coerce")
+        df["spend"]=to_num(df["Cost (Spend, Amount Spent)"])
+        df["conversions"]=to_num(df["All Conversions"])
+        df["clicks"]=to_num(df["Clicks"])
+        df["impressions"]=to_num(df["Impressions"])
+        df["campaign"]=df["Campaign Name"]
+        df["adgroup"]=df["Ad Group Name"]
+        df["keyword"]=df["Keyword (Ad Group Criterion)"]
+        df["match_type"]=df["Match Type (Segment)"]
+        df["is_search"]=True
+        df=df.dropna(subset=["date"])
+        df=df[df["spend"]>0]  # ignorar linhas sem spend
+        if len(df)>0:
+            print(f"     Search (keywords): {len(df)} linhas | {df['date'].min().date()} → {df['date'].max().date()}")
+        else:
+            print("     Search (keywords): vazio — cliente sem rede de pesquisa")
+            df=pd.DataFrame(columns=COLS)
+    except Exception as e:
+        print(f"     Aviso google-ads: {e}")
+        df=pd.DataFrame(columns=COLS)
 
     # Carregar google-ads-pesquisa — fonte verdade para spend da rede de pesquisa
     try:
@@ -400,7 +411,10 @@ def load_google():
     except Exception as e:
         print(f"     Aviso google-ads-outros: {e}")
 
-    print(f"     Total unificado: {len(df)} linhas | {df['date'].min().date()} → {df['date'].max().date()}")
+    if len(df)>0:
+        print(f"     Total unificado: {len(df)} linhas | {df['date'].min().date()} → {df['date'].max().date()}")
+    else:
+        print("     Total unificado: 0 linhas")
     return df
 
 
