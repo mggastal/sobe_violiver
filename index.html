@@ -462,8 +462,6 @@ const GOOGLE_BD = {};
 const GOOGLE_MONTHLY = {"lbl": [], "totalS": [], "totalConv": [], "cpaG": [], "cpcG": [], "ctrG": [], "camps": []};
 const GOOGLE_RAW = [];
 // SEO
-const MOEDA_SIMBOLO  = 'R$';
-const MOEDA_COD      = 'BRL';
 
 // ═══ CONFIG ═══
 const LANCAMENTO_COD='';
@@ -487,14 +485,7 @@ let chartMode='conversoes'; // 'conversoes' | 'reconhecimento' | 'engajamento'
 let pesFilters={};
 
 // ═══ UTILS ═══
-// Formata moeda usando MOEDA_SIMBOLO e locale correto para o cliente
-function fR(v){
-  if(v==null||isNaN(v)) return '—';
-  const locale=MOEDA_COD==='USD'?'en-US':MOEDA_COD==='EUR'?'de-DE':'pt-BR';
-  const n=Number(v).toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2});
-  if(MOEDA_COD==='EUR') return n+'€';
-  return MOEDA_SIMBOLO+n;
-}
+const fR=v=>(v==null||isNaN(v))?'—':'R$'+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fN=v=>v==null?'—':Number(v).toLocaleString('pt-BR');
 const fP=v=>v==null?'—':Number(v).toFixed(2)+'%';
 const r2=v=>Math.round(v*100)/100;
