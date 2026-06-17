@@ -25,7 +25,7 @@ OUTPUT_FILE      = "index.html"
 
 NOME_CLIENTE     = "VI Oliver"
 LOGO_LETRA       = "VI"
-COR_ACENTO       = "#AD96DC"
+COR_ACENTO       = "#6659A5"
 
 LANCAMENTO_COD   = ""        # filtra campanhas; "" = ver tudo
 USAR_PESQUISA    = False            # False = oculta aba Pesquisa
