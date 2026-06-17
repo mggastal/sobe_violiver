@@ -653,20 +653,28 @@ def google_breakdowns(df):
         df_g["date"]=pd.to_datetime(df_g["Date (Segment)"],errors="coerce")
         df_g["spend"]=to_num(df_g["Cost (Spend, Amount Spent)"])
         df_g["conv"]=to_num(df_g["All Conversions"])
-        df_g["gender"]=df_g["Gender (Ad Group Criterion)"].str.lower()
+        df_g["gender"]=df_g["Gender (Ad Group Criterion)"].astype(str).str.lower()
         df_g=df_g.dropna(subset=["date"])
     except Exception as e: print(f"  Aviso Gender: {e}"); df_g=pd.DataFrame()
     AGE_ORDER=["18-24","25-34","35-44","45-54","55-64","65+"]
     def bd(pa, pg):
-        aa=pa[pa["age"].isin(AGE_ORDER)].groupby("age").agg(spend=("spend","sum"),conv=("conv","sum")).reset_index()
-        aa["_o"]=aa["age"].apply(lambda x:AGE_ORDER.index(x) if x in AGE_ORDER else 99)
-        aa=aa[aa["spend"]>0].sort_values("_o")
-        aa["cpl"]=(aa["spend"]/aa["conv"]).where(aa["conv"]>0).round(2)
-        ga=pg[pg["gender"].isin(["female","male"])].groupby("gender").agg(spend=("spend","sum"),conv=("conv","sum")).reset_index()
-        ga=ga[ga["spend"]>0].sort_values("conv",ascending=False)
-        ga["cpl"]=(ga["spend"]/ga["conv"]).where(ga["conv"]>0).round(2)
-        def tl(df2,dim): return [{"n":str(r[dim]),"spend":round(float(r["spend"]),2),"conv":round(float(r["conv"]),2),"cpl":safe(r["cpl"])} for _,r in df2.iterrows()]
-        return {"age":tl(aa,"age"),"gender":tl(ga,"gender")}
+        age_d=[]; gen_d=[]
+        try:
+            if len(pa)>0 and "age" in pa.columns:
+                aa=pa[pa["age"].isin(AGE_ORDER)].groupby("age").agg(spend=("spend","sum"),conv=("conv","sum")).reset_index()
+                aa["_o"]=aa["age"].apply(lambda x:AGE_ORDER.index(x) if x in AGE_ORDER else 99)
+                aa=aa[aa["spend"]>0].sort_values("_o")
+                aa["cpl"]=(aa["spend"]/aa["conv"]).where(aa["conv"]>0).round(2)
+                age_d=[{"n":str(r["age"]),"spend":round(float(r["spend"]),2),"conv":round(float(r["conv"]),2),"cpl":safe(r["cpl"])} for _,r in aa.iterrows()]
+        except Exception as e: print(f"  Aviso bd age: {e}")
+        try:
+            if len(pg)>0 and "gender" in pg.columns:
+                ga=pg[pg["gender"].isin(["female","male"])].groupby("gender").agg(spend=("spend","sum"),conv=("conv","sum")).reset_index()
+                ga=ga[ga["spend"]>0].sort_values("conv",ascending=False)
+                ga["cpl"]=(ga["spend"]/ga["conv"]).where(ga["conv"]>0).round(2)
+                gen_d=[{"n":str(r["gender"]),"spend":round(float(r["spend"]),2),"conv":round(float(r["conv"]),2),"cpl":safe(r["cpl"])} for _,r in ga.iterrows()]
+        except Exception as e: print(f"  Aviso bd gender: {e}")
+        return {"age":age_d,"gender":gen_d}
     result={}
     def filt(dfa,dfg,start,end):
         pa=dfa[(dfa["date"]>=start)&(dfa["date"]<=end)] if len(dfa)>0 else dfa
