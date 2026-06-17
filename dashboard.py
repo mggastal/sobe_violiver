@@ -437,10 +437,13 @@ def load_google():
 
 def apply_pesq_spend(df):
     """Adiciona linhas extras com a diferença de spend entre google-ads-pesquisa e keywords.
+    Garante que a coluna date é datetime antes de processar.
     Keywords mantêm seu spend original. A diferença entra como linha com keyword vazia
     (será filtrada do Top Palavras-chave mas conta nos KPIs/daily/monthly agregados)."""
     global _dfp_pesquisa
     if _dfp_pesquisa.empty: return df
+    df = df.copy()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
 
     extras = []
     for camp in _dfp_pesquisa["campaign"].unique():
@@ -602,6 +605,9 @@ def google_keywords(df):
 
 def google_raw(df):
     """Raw diário — search com keywords, outros sem. Usado para filtros de data livre no HTML."""
+    df=df.copy()
+    df["date"]=pd.to_datetime(df["date"], errors="coerce")
+    df=df.dropna(subset=["date"])
     rows=[]
     # Search: com keyword
     df_search=df[df["is_search"]==True] if "is_search" in df.columns else df
@@ -714,7 +720,11 @@ def meta_monthly(df):
 def google_monthly(df):
     PT_MONTHS={"Jan":"Jan","Feb":"Fev","Mar":"Mar","Apr":"Abr","May":"Mai",
                 "Jun":"Jun","Jul":"Jul","Aug":"Ago","Sep":"Set","Oct":"Out","Nov":"Nov","Dec":"Dez"}
-    df=df.copy(); df["ym"]=df["date"].dt.to_period("M")
+    df=df.copy()
+    df["date"]=pd.to_datetime(df["date"], errors="coerce")
+    df=df.dropna(subset=["date"])
+    if not len(df): return {"lbl":[],"totalS":[],"totalConv":[],"cpaG":[],"cpcG":[],"ctrG":[],"camps":[]}
+    df["ym"]=df["date"].dt.to_period("M")
     months=sorted(df["ym"].unique())
     out={"lbl":[],"totalS":[],"totalConv":[],"cpaG":[],"cpcG":[],"ctrG":[],"camps":[]}
     for m in months:
@@ -819,9 +829,11 @@ def inject_all(tpl, meta_k, meta_d, meta_dc, meta_raw_c, meta_t, meta_bd, meta_m
     html=replace_js_const(html,"GOOGLE_BD",      g_bd)
     html=replace_js_const(html,"GOOGLE_MONTHLY", g_month)
     html=replace_js_const(html,"GOOGLE_RAW",     g_raw)
+    # Moeda via replace_js_const (re.sub nao lida bem com $ no valor)
+    html=replace_js_const(html,"MOEDA_SIMBOLO", MOEDA_SIMBOLO)
+    html=replace_js_const(html,"MOEDA_COD",     MOEDA)
     for k,v in [("LANCAMENTO_COD",f"'{LANCAMENTO_COD}'"),("NOME_CLIENTE",f"'{NOME_CLIENTE}'"),
                 ("LOGO_LETRA",f"'{LOGO_LETRA}'"),("COR_ACENTO",f"'{COR_ACENTO}'"),
-                ("MOEDA_SIMBOLO",f"'{MOEDA_SIMBOLO}'"),("MOEDA_COD",f"'{MOEDA}'"),
                 ("CPL_BOM",str(CPL_BOM)),("CPL_MEDIO",str(CPL_MEDIO)),
                 ("CTR_BOM",str(CTR_BOM)),("CTR_MEDIO",str(CTR_MEDIO)),
                 ("CR_BOM",str(CR_BOM)),("CR_MEDIO",str(CR_MEDIO)),
