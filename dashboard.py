@@ -463,6 +463,7 @@ def google_daily(df):
 def google_kpis(df):
     hoje=pd.Timestamp(date.today()); ontem=hoje-pd.Timedelta(days=1)
     def kpi(p):
+        if not len(p): return {"spend":0,"conversions":0,"clicks":0,"impressions":0,"cpa":None,"ctr":None,"cpc":None}
         sp=float(p["spend"].sum()); cv=float(p["conversions"].sum())
         cl=int(p["clicks"].sum()); imp=int(p["impressions"].sum())
         return {"spend":round(sp,2),"conversions":round(cv,2),"clicks":cl,"impressions":imp,
@@ -530,11 +531,12 @@ def google_camps(df):
                         "cpc":round(sp_k/cl_k,2) if cl_k>0 else None,
                         "ctr":round(cl_k/imp_k*100,2) if imp_k>0 else None,
                         "clicks":cl_k,"imp":imp_k})
-                # N/A: diferença entre spend real do grupo e soma das keywords
-                sp_na=round(sp2-sp_kw_total,2) if sp2_real is not None else round(float(ag2["spend"])-sp_kw_total,2)
-                if sp_na>0.01:
-                    kw_list.append({"n":"N/A","match":"—","spend":sp_na,"conv":None,
-                        "cpa":None,"cpc":None,"ctr":None,"clicks":0,"imp":0})
+                # N/A: diferença entre spend real do grupo e soma das keywords (só para search)
+                if is_search_camp:
+                    sp_na=round(sp2-sp_kw_total,2) if sp2_real is not None else round(float(ag2["spend"])-sp_kw_total,2)
+                    if sp_na>0.01:
+                        kw_list.append({"n":"N/A","match":"—","spend":sp_na,"conv":None,
+                            "cpa":None,"cpc":None,"ctr":None,"clicks":0,"imp":0})
                 adgroups.append({"n":adg_name,"spend":sp2,"conv":cv2,
                     "cpa":round(sp2/cv2,2) if cv2>0 else None,"cpc":round(sp2/cl2,2) if cl2>0 else None,
                     "ctr":round(cl2/imp2*100,2) if imp2>0 else None,"clicks":cl2,"imp":imp2,"keywords":kw_list})
