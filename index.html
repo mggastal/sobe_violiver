@@ -369,7 +369,7 @@ details.desk-only{display:block!important;}
         <div class="sec-hd">Top Palavras-chave</div>
         <div class="tc" id="gKeywords"></div>
       </div>
-      <div class="section" style="margin-top:16px">
+      <div class="section" style="margin-top:16px" id="gSegSection">
         <div class="sec-hd">Segmentação</div>
         <div class="g2">
           <div><div class="seg-ttl">Gênero</div><div class="seg-card" id="gGender"></div></div>
@@ -1650,6 +1650,12 @@ function renderGoogle(){
   }
   gSegTable('gGender', gbd.gender, 'Gênero');
   gSegTable('gAge',    gbd.age,    'Faixa Etária');
+  // Ocultar seção se não há dados em nenhum breakdown
+  const gSegSec=document.getElementById('gSegSection');
+  if(gSegSec){
+    const temDados=gbd.gender?.length||gbd.age?.length;
+    gSegSec.style.display=temDados?'':'none';
+  }
 }
 
 function toggleGCamp(cid, camp){
