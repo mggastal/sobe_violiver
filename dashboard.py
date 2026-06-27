@@ -11,7 +11,6 @@ from pathlib import Path
 # ══════════════════════════════════════════════════════
 # CONFIG
 # ══════════════════════════════════════════════════════
-
 SHEET_ID         = "1x6O_fLHlViOtSveq6UIV6sjfR4Tpi_wlv_ycboCF0hc"
 OUTPUT_JSON      = "data.json"
 
@@ -686,7 +685,7 @@ def main():
         "TX_CONV_MEDIO":     TX_CONV_MEDIO,
         "CPM_BOM":           CPM_BOM,
         "CPM_MEDIO":         CPM_MEDIO,
-        "DATA_GERACAO":      date.today().strftime("%d/%m/%Y"),
+        "DATA_GERACAO":      date.today().strftime("%Y-%m-%d"),
     }
 
     Path(OUTPUT_JSON).write_text(
