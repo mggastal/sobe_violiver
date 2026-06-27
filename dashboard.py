@@ -13,30 +13,22 @@ from pathlib import Path
 # ══════════════════════════════════════════════════════
 
 SHEET_ID         = "1x6O_fLHlViOtSveq6UIV6sjfR4Tpi_wlv_ycboCF0hc"
-TEMPLATE_FILE    = "dashboard.html"
-OUTPUT_FILE      = "index.html"
+OUTPUT_JSON      = "data.json"
 
 NOME_CLIENTE     = "VI Oliver"
 LOGO_LETRA       = "VI"
 COR_ACENTO       = "#6659A5"
 
-LANCAMENTO_COD   = ""        # filtra campanhas; "" = ver tudo
-USAR_PESQUISA    = False            # False = oculta aba Pesquisa
-USAR_GOOGLE      = True             # False = oculta toda a seção Google Ads
+LANCAMENTO_COD   = ""
+USAR_PESQUISA    = False
+USAR_GOOGLE      = True
 
-# Etapas do funil — coloque False para remover a etapa
-# O cálculo das taxas se ajusta automaticamente às etapas ativas
 FUNIL_IMPRESSOES  = True
 FUNIL_LINK_CLICKS = True
-FUNIL_PAGE_VIEW   = False
+FUNIL_PAGE_VIEW   = True
 FUNIL_LEADS       = True
 
-# Moeda — escolha a moeda do cliente:
-#   "BRL"  → R$ (Real Brasileiro)
-#   "USD"  → $ (Dólar Americano)
-#   "EUR"  → € (Euro)
-#   "ARS"  → $ (Peso Argentino)
-MOEDA            = "USD"
+MOEDA            = "BRL"
 
 _MOEDA_MAP = {
     "BRL": {"simbolo": "R$", "locale": "pt-BR"},
@@ -48,18 +40,16 @@ _moeda_cfg    = _MOEDA_MAP.get(MOEDA, _MOEDA_MAP["BRL"])
 MOEDA_SIMBOLO = _moeda_cfg["simbolo"]
 MOEDA_LOCALE  = _moeda_cfg["locale"]
 
-# Metas do funil — define cores (verde/amarelo/vermelho)
 CPL_BOM          = 40.0
-CPL_MEDIO        = 45.0
+CPL_MEDIO        = 50.0
 CTR_BOM          = 0.6
 CTR_MEDIO        = 0.4
 CR_BOM           = 68.0
 CR_MEDIO         = 60.0
 TX_CONV_BOM      = 3.0
 TX_CONV_MEDIO    = 2.0
-CPM_BOM          = 5.0    # CPM ≤ 5 → verde | 5-12 → amarelo | acima → vermelho (menor = melhor)
+CPM_BOM          = 5.0
 CPM_MEDIO        = 12.0
-
 
 # ══════════════════════════════════════════════════════
 def sheet_url(t): return f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={t}"
