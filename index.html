@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Carregando dashboard...</title>
+  <link rel="shortcut icon" href="https://mggastal.github.io/sobe-template/sobe.png">
+  <link rel="icon" type="image/png" href="https://mggastal.github.io/sobe-template/sobe.png">
+  <title>Carregando...</title>
   <style>
     body { margin: 0; background: #0a0f1e; display: flex; align-items: center;
            justify-content: center; height: 100vh; font-family: sans-serif; }
@@ -25,22 +27,69 @@
     const DATA_URL     = './data.json';
     const BASE_URL     = window.location.href.replace(/\/[^\/]*$/, '/');
 
+    function runScripts(container) {
+      // Recriar todos os <script> do template para que executem
+      const scripts = container.querySelectorAll('script');
+      const chain = [...scripts].reduce((p, oldScript) => {
+        return p.then(() => new Promise(resolve => {
+          const s = document.createElement('script');
+          if(oldScript.src) {
+            s.src = oldScript.src;
+            s.onload = resolve;
+            s.onerror = resolve;
+          } else {
+            s.textContent = oldScript.textContent;
+            resolve();
+          }
+          oldScript.parentNode.replaceChild(s, oldScript);
+        }));
+      }, Promise.resolve());
+      return chain;
+    }
+
     Promise.all([
       fetch(TEMPLATE_URL).then(r => { if(!r.ok) throw new Error('Template indisponível'); return r.text(); }),
       fetch(DATA_URL).then(r => { if(!r.ok) throw new Error('data.json não encontrado'); return r.json(); })
     ])
     .then(([templateHtml, data]) => {
-      // Injetar dados antes do </head>
+      // Injetar dados no HTML antes de parsear
       const dataScript = `<script>
 window.DASH_DATA = ${JSON.stringify(data)};
 window.DASH_BASE_URL = '${BASE_URL}';
 <\/script>`;
+      templateHtml = templateHtml.replace('</head>', dataScript + '</head>');
 
-      const injected = templateHtml.replace('</head>', dataScript + '</head>');
+      // Parsear o HTML do template
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(templateHtml, 'text/html');
 
-      document.open();
-      document.write(injected);
-      document.close();
+      // Aplicar atributos do <html> (data-theme etc)
+      const srcHtml = doc.documentElement;
+      [...srcHtml.attributes].forEach(a => document.documentElement.setAttribute(a.name, a.value));
+
+      // Substituir <head> mantendo favicon atual
+      // Copiar estilos, links e metas do template (exceto favicon — já está no loader)
+      const head = doc.head;
+      [...head.childNodes].forEach(node => {
+        // Pular favicons do template (já definidos no loader)
+        if(node.nodeName === 'LINK') {
+          const rel = node.getAttribute('rel') || '';
+          if(rel.includes('icon')) return;
+        }
+        document.head.appendChild(document.adoptNode(node.cloneNode(true)));
+      });
+
+      // Substituir <body> com o conteúdo do template
+      document.body.innerHTML = doc.body.innerHTML;
+
+      // Copiar atributos do body
+      [...doc.body.attributes].forEach(a => document.body.setAttribute(a.name, a.value));
+
+      // Executar scripts em ordem
+      return runScripts(document.body).then(() => {
+        // Executar scripts do head que não sejam do loader
+        return runScripts(document.head);
+      });
     })
     .catch(err => {
       document.body.innerHTML = `
