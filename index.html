@@ -3,8 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ═══════════════════════════════════════════════════════════
+       FAVICON — ícone que aparece na aba do browser
+       Trocar "sobe.png" pelo nome do arquivo de ícone desejado
+       O arquivo deve estar no TEMPLATE_REPO abaixo
+  ════════════════════════════════════════════════════════════ -->
   <link rel="shortcut icon" href="https://mggastal.github.io/sobe-template/sobe.png">
   <link rel="icon" type="image/png" href="https://mggastal.github.io/sobe-template/sobe.png">
+
   <title>Carregando...</title>
   <style>
     body { margin: 0; background: #0a0f1e; display: flex; align-items: center;
@@ -23,17 +30,32 @@
   </div>
 
   <script>
-    const TEMPLATE_URL = 'https://mggastal.github.io/sobe-template/template.html';
-    const DATA_URL     = './data.json';
+    // ╔══════════════════════════════════════════════════════════════╗
+    // ║                     CONFIG DO LOADER                        ║
+    // ╠══════════════════════════════════════════════════════════════╣
+
+    // Repositório central do template (GitHub Pages da Sobé)
+    // Trocar se o repo do template mudar de nome ou usuário
+    const TEMPLATE_REPO = 'https://mggastal.github.io/sobe-template';
+
+    // Nome do arquivo de template dentro do TEMPLATE_REPO
+    const TEMPLATE_FILE = 'template.html';
+
+    // Nome do arquivo de dados gerado pelo dashboard.py
+    const DATA_FILE = 'data.json';
+
+    // ╚══════════════════════════════════════════════════════════════╝
+
+    const TEMPLATE_URL = `${TEMPLATE_REPO}/${TEMPLATE_FILE}`;
+    const DATA_URL     = `./${DATA_FILE}`;
     const BASE_URL     = window.location.href.replace(/\/[^\/]*$/, '/');
 
-    function runScripts(container) {
-      // Recriar todos os <script> do template para que executem
-      const scripts = container.querySelectorAll('script');
-      const chain = [...scripts].reduce((p, oldScript) => {
-        return p.then(() => new Promise(resolve => {
+    // Executa lista de <script> em sequência (ordem garante dependências)
+    function runScriptsSequential(scripts) {
+      return [...scripts].reduce((chain, oldScript) => {
+        return chain.then(() => new Promise(resolve => {
           const s = document.createElement('script');
-          if(oldScript.src) {
+          if (oldScript.src) {
             s.src = oldScript.src;
             s.onload = resolve;
             s.onerror = resolve;
@@ -44,52 +66,50 @@
           oldScript.parentNode.replaceChild(s, oldScript);
         }));
       }, Promise.resolve());
-      return chain;
     }
 
     Promise.all([
-      fetch(TEMPLATE_URL).then(r => { if(!r.ok) throw new Error('Template indisponível'); return r.text(); }),
+      fetch(TEMPLATE_URL).then(r => { if(!r.ok) throw new Error('Template indisponível: ' + TEMPLATE_URL); return r.text(); }),
       fetch(DATA_URL).then(r => { if(!r.ok) throw new Error('data.json não encontrado'); return r.json(); })
     ])
     .then(([templateHtml, data]) => {
-      // Injetar dados no HTML antes de parsear
+      // 1. Injetar dados antes do </head>
       const dataScript = `<script>
 window.DASH_DATA = ${JSON.stringify(data)};
 window.DASH_BASE_URL = '${BASE_URL}';
 <\/script>`;
       templateHtml = templateHtml.replace('</head>', dataScript + '</head>');
 
-      // Parsear o HTML do template
+      // 2. Parsear o HTML
       const parser = new DOMParser();
       const doc = parser.parseFromString(templateHtml, 'text/html');
 
-      // Aplicar atributos do <html> (data-theme etc)
-      const srcHtml = doc.documentElement;
-      [...srcHtml.attributes].forEach(a => document.documentElement.setAttribute(a.name, a.value));
+      // 3. Copiar atributos do <html> (data-theme etc)
+      [...doc.documentElement.attributes].forEach(a =>
+        document.documentElement.setAttribute(a.name, a.value)
+      );
 
-      // Substituir <head> mantendo favicon atual
-      // Copiar estilos, links e metas do template (exceto favicon — já está no loader)
-      const head = doc.head;
-      [...head.childNodes].forEach(node => {
-        // Pular favicons do template (já definidos no loader)
-        if(node.nodeName === 'LINK') {
+      // 4. Copiar estilos e links do <head> (ignorar favicons — já estão no loader)
+      [...doc.head.childNodes].forEach(node => {
+        if (node.nodeName === 'LINK') {
           const rel = node.getAttribute('rel') || '';
-          if(rel.includes('icon')) return;
+          if (rel.includes('icon')) return;
         }
+        if (node.nodeName === 'SCRIPT') return; // scripts executados depois
         document.head.appendChild(document.adoptNode(node.cloneNode(true)));
       });
 
-      // Substituir <body> com o conteúdo do template
+      // 5. Substituir body
       document.body.innerHTML = doc.body.innerHTML;
-
-      // Copiar atributos do body
       [...doc.body.attributes].forEach(a => document.body.setAttribute(a.name, a.value));
 
-      // Executar scripts em ordem
-      return runScripts(document.body).then(() => {
-        // Executar scripts do head que não sejam do loader
-        return runScripts(document.head);
-      });
+      // 6. Executar scripts na ordem correta: HEAD primeiro, depois BODY
+      // (Chart.js e plugins estão no head — precisam rodar antes do dashboard JS)
+      const headScripts = doc.head.querySelectorAll('script');
+      const bodyScripts = document.body.querySelectorAll('script');
+
+      return runScriptsSequential(headScripts)
+        .then(() => runScriptsSequential(bodyScripts));
     })
     .catch(err => {
       document.body.innerHTML = `
