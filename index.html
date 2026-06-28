@@ -35,7 +35,8 @@
     // Nome do arquivo de dados gerado pelo dashboard.py
     const DATA_FILE = 'data.json';
 
-    // Favicon — arquivo dentro do TEMPLATE_REPO
+    // Favicon — busca no repo do cliente (BASE_URL + FAVICON_FILE)
+    // Se não existir, fica sem favicon. Sem erro.
     const FAVICON_FILE = 'sobe.png';
 
     // ╚══════════════════════════════════════════════════════════════╝
@@ -43,30 +44,37 @@
     const TEMPLATE_URL = `${TEMPLATE_REPO}/${TEMPLATE_FILE}`;
     const DATA_URL     = `./${DATA_FILE}`;
     const BASE_URL     = window.location.href.replace(/\/[^\/]*$/, '/');
-    const FAVICON_URL  = `${TEMPLATE_REPO}/${FAVICON_FILE}`;
+    const FAVICON_URL  = `${BASE_URL}${FAVICON_FILE}`;
+
+    // Tenta carregar o favicon do repo do cliente
+    // Se existir → injeta no HTML antes do document.write
+    // Se não existir → segue sem favicon, sem erro
+    function getFaviconTag() {
+      return fetch(FAVICON_URL, { method: 'HEAD' })
+        .then(r => r.ok ? `<link rel="shortcut icon" href="${FAVICON_URL}"><link rel="icon" type="image/png" href="${FAVICON_URL}">` : '')
+        .catch(() => '');
+    }
 
     Promise.all([
       fetch(TEMPLATE_URL).then(r => { if(!r.ok) throw new Error('Template indisponível'); return r.text(); }),
-      fetch(DATA_URL).then(r => { if(!r.ok) throw new Error('data.json não encontrado'); return r.json(); })
+      fetch(DATA_URL).then(r => { if(!r.ok) throw new Error('data.json não encontrado'); return r.json(); }),
+      getFaviconTag()
     ])
-    .then(([templateHtml, data]) => {
+    .then(([templateHtml, data, faviconTag]) => {
 
-      // Injetar favicon correto no HTML antes de escrever
-      const faviconTags = `<link rel="shortcut icon" href="${FAVICON_URL}">
-<link rel="icon" type="image/png" href="${FAVICON_URL}">`;
+      // Substituir os <link> de favicon do template pelo do cliente (ou remover se não tiver)
       templateHtml = templateHtml.replace(
-        /<link[^>]*rel="shortcut icon"[^>]*>[\s\S]*?<link[^>]*rel="icon"[^>]*>/,
-        faviconTags
+        /<link[^>]*(?:shortcut icon|rel="icon")[^>]*>\s*/g,
+        ''
       );
 
-      // Injetar dados antes do </head>
+      // Injetar favicon do cliente (se existir) e dados antes do </head>
       const dataScript = `<script>
 window.DASH_DATA = ${JSON.stringify(data)};
 window.DASH_BASE_URL = '${BASE_URL}';
 <\/script>`;
-      templateHtml = templateHtml.replace('</head>', dataScript + '</head>');
+      templateHtml = templateHtml.replace('</head>', faviconTag + dataScript + '</head>');
 
-      // document.write — o mais confiável para HTML completo
       document.open();
       document.write(templateHtml);
       document.close();
