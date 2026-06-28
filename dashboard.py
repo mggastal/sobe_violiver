@@ -283,7 +283,7 @@ def meta_tables(df, img_dir):
 def meta_breakdowns(df):
     print("  Lendo breakdowns...")
     hoje_bd=pd.Timestamp(date.today()); AGE_ORDER=["18-24","25-34","35-44","45-54","55-64","65+"]
-    CONV_COLS_BD=["Action Leadgen Grouped"]
+    CONV_COLS_BD=["Action Messaging Conversations Started (Onsite Conversion)","Action Value Messaging Conversations Started (Onsite Conversion)","Action Leads","Action FB Pixel Custom (Offsite Conversion)"]
     def seg(agg,dim):
         agg=agg[agg["spend"]>0].copy()
         agg["cpl"]=(agg["spend"]/agg["leads"]).where(agg["leads"]>0).round(2)
