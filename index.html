@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Favicon — coloque sobe.png no repo do cliente para aparecer -->
+  <link rel="shortcut icon" href="./sobe.png">
+  <link rel="icon" type="image/png" href="./sobe.png">
   <title>Carregando...</title>
   <style>
     body { margin: 0; background: #0a0f1e; display: flex; align-items: center;
@@ -60,7 +63,7 @@
       fetch(DATA_URL).then(r => { if(!r.ok) throw new Error('data.json não encontrado'); return r.json(); }),
       getFaviconTag()
     ])
-    .then(([templateHtml, data, faviconTag]) => {
+    .then(([templateHtml, data]) => {
 
       // Substituir os <link> de favicon do template pelo do cliente (ou remover se não tiver)
       templateHtml = templateHtml.replace(
