@@ -3,15 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- ═══════════════════════════════════════════════════════════
-       FAVICON — ícone que aparece na aba do browser
-       Trocar "sobe.png" pelo nome do arquivo de ícone desejado
-       O arquivo deve estar no TEMPLATE_REPO abaixo
-  ════════════════════════════════════════════════════════════ -->
-  <link rel="shortcut icon" href="https://mggastal.github.io/sobe-template/sobe.png">
-  <link rel="icon" type="image/png" href="https://mggastal.github.io/sobe-template/sobe.png">
-
   <title>Carregando...</title>
   <style>
     body { margin: 0; background: #0a0f1e; display: flex; align-items: center;
@@ -44,72 +35,41 @@
     // Nome do arquivo de dados gerado pelo dashboard.py
     const DATA_FILE = 'data.json';
 
+    // Favicon — arquivo dentro do TEMPLATE_REPO
+    const FAVICON_FILE = 'sobe.png';
+
     // ╚══════════════════════════════════════════════════════════════╝
 
     const TEMPLATE_URL = `${TEMPLATE_REPO}/${TEMPLATE_FILE}`;
     const DATA_URL     = `./${DATA_FILE}`;
     const BASE_URL     = window.location.href.replace(/\/[^\/]*$/, '/');
-
-    // Executa lista de <script> em sequência (ordem garante dependências)
-    function runScriptsSequential(scripts) {
-      return [...scripts].reduce((chain, oldScript) => {
-        return chain.then(() => new Promise(resolve => {
-          const s = document.createElement('script');
-          if (oldScript.src) {
-            s.src = oldScript.src;
-            s.onload = resolve;
-            s.onerror = resolve;
-          } else {
-            s.textContent = oldScript.textContent;
-            resolve();
-          }
-          oldScript.parentNode.replaceChild(s, oldScript);
-        }));
-      }, Promise.resolve());
-    }
+    const FAVICON_URL  = `${TEMPLATE_REPO}/${FAVICON_FILE}`;
 
     Promise.all([
-      fetch(TEMPLATE_URL).then(r => { if(!r.ok) throw new Error('Template indisponível: ' + TEMPLATE_URL); return r.text(); }),
+      fetch(TEMPLATE_URL).then(r => { if(!r.ok) throw new Error('Template indisponível'); return r.text(); }),
       fetch(DATA_URL).then(r => { if(!r.ok) throw new Error('data.json não encontrado'); return r.json(); })
     ])
     .then(([templateHtml, data]) => {
-      // 1. Injetar dados antes do </head>
+
+      // Injetar favicon correto no HTML antes de escrever
+      const faviconTags = `<link rel="shortcut icon" href="${FAVICON_URL}">
+<link rel="icon" type="image/png" href="${FAVICON_URL}">`;
+      templateHtml = templateHtml.replace(
+        /<link[^>]*rel="shortcut icon"[^>]*>[\s\S]*?<link[^>]*rel="icon"[^>]*>/,
+        faviconTags
+      );
+
+      // Injetar dados antes do </head>
       const dataScript = `<script>
 window.DASH_DATA = ${JSON.stringify(data)};
 window.DASH_BASE_URL = '${BASE_URL}';
 <\/script>`;
       templateHtml = templateHtml.replace('</head>', dataScript + '</head>');
 
-      // 2. Parsear o HTML
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(templateHtml, 'text/html');
-
-      // 3. Copiar atributos do <html> (data-theme etc)
-      [...doc.documentElement.attributes].forEach(a =>
-        document.documentElement.setAttribute(a.name, a.value)
-      );
-
-      // 4. Copiar estilos e links do <head> (ignorar favicons — já estão no loader)
-      [...doc.head.childNodes].forEach(node => {
-        if (node.nodeName === 'LINK') {
-          const rel = node.getAttribute('rel') || '';
-          if (rel.includes('icon')) return;
-        }
-        if (node.nodeName === 'SCRIPT') return; // scripts executados depois
-        document.head.appendChild(document.adoptNode(node.cloneNode(true)));
-      });
-
-      // 5. Substituir body
-      document.body.innerHTML = doc.body.innerHTML;
-      [...doc.body.attributes].forEach(a => document.body.setAttribute(a.name, a.value));
-
-      // 6. Executar scripts na ordem correta: HEAD primeiro, depois BODY
-      // (Chart.js e plugins estão no head — precisam rodar antes do dashboard JS)
-      const headScripts = doc.head.querySelectorAll('script');
-      const bodyScripts = document.body.querySelectorAll('script');
-
-      return runScriptsSequential(headScripts)
-        .then(() => runScriptsSequential(bodyScripts));
+      // document.write — o mais confiável para HTML completo
+      document.open();
+      document.write(templateHtml);
+      document.close();
     })
     .catch(err => {
       document.body.innerHTML = `
