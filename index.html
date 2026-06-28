@@ -21,27 +21,21 @@
   </div>
 
   <script>
-    // ── CONFIG ──────────────────────────────────────────────────────
     const TEMPLATE_URL = 'https://mggastal.github.io/sobe-template/template.html';
     const DATA_URL     = './data.json';
-    // Base URL para assets do cliente (imgs/, logos)
     const BASE_URL     = window.location.href.replace(/\/[^\/]*$/, '/');
-    // ────────────────────────────────────────────────────────────────
 
     Promise.all([
       fetch(TEMPLATE_URL).then(r => { if(!r.ok) throw new Error('Template indisponível'); return r.text(); }),
       fetch(DATA_URL).then(r => { if(!r.ok) throw new Error('data.json não encontrado'); return r.json(); })
     ])
     .then(([templateHtml, data]) => {
-      // Injetar os dados DENTRO do template como script inline
-      // antes do </head> — assim window.DASH_DATA existe antes
-      // de qualquer script do template rodar
+      // Injetar dados antes do </head>
       const dataScript = `<script>
 window.DASH_DATA = ${JSON.stringify(data)};
 window.DASH_BASE_URL = '${BASE_URL}';
 <\/script>`;
 
-      // Inserir logo após o <head> para garantir disponibilidade máxima
       const injected = templateHtml.replace('</head>', dataScript + '</head>');
 
       document.open();
